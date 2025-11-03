@@ -18,7 +18,7 @@ A simple typing speed test app inspired by [Monkeytype](https://monkeytype.com),
 - [Vue Router](https://router.vuejs.org/) for routing
 
 ## Getting Started
-
+(Will update later)
 1. **Install dependencies:**
    ```bash
    npm install

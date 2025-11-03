@@ -13,7 +13,7 @@ function goHome() {
     <!-- Clickable logo + title to go home -->
     <div class="left-header" @click="goHome">
       <img src="../assets/logo.svg" alt="DonkeyType Logo" class="logo" />
-      <h1 class="title">DonkeyType</h1>
+      <h1 class="title">Donkeytype</h1>
     </div>
 
     <!-- Navigation link -->
