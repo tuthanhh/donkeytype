@@ -1,18 +1,109 @@
 <script setup>
 import { ref, onMounted, computed, nextTick } from 'vue'
+// Define props to accept numberOfWords
+const emit = defineEmits(['update:result'])
+const props = defineProps({
+  numberOfWords: {
+    type: Number,
+    default: 50,
+  },
+  result: {
+    type: Object,
+    default: () => ({
+      correctChars: 0,
+      incorrectChars: 0,
+      totalChars: 0,
+      accuracy: 0,
+      wpm: 0,
+      startTime: null,
+      endTime: null,
+    }),
+  },
+})
+
+// State variables
 const typingText = ref('')
 const loading = ref(true)
-const numberOfWords = ref(30)
+
 const input = ref('')
 const inputRef = ref(null)
 const currentIndex = computed(() => input.value.length)
+const startTimeRef = ref(null)
+const hasStarted = ref(false)
+
+// Emit event when typing test is finished
+
+function startTest() {
+  hasStarted.value = true
+  startTimeRef.value = Date.now() // Set the local start time
+  const newResult = {
+    ...props.result,
+    startTime: startTimeRef.value, // Update the result with the local start time
+    endTime: null,
+  }
+  emit('update:result', newResult)
+}
+
+function resetTest() {
+  startTimeRef.value = null
+  hasStarted.value = false
+  const newResult = {
+    ...props.result,
+    startTime: null,
+    endTime: null,
+    correctChars: 0,
+    incorrectChars: 0,
+    totalChars: 0,
+    accuracy: 0,
+    wpm: 0,
+  }
+  emit('update:result', newResult)
+}
+
+function endTest() {
+  hasStarted.value = false
+  const correct = input.value.split('').filter((c, i) => c === typingText.value[i]).length
+  const total = input.value.length
+  const endTime = Date.now()
+  const newResult = {
+    ...props.result,
+    correctChars: correct,
+    incorrectChars: total - correct,
+    totalChars: total,
+    startTime: startTimeRef.value,
+    endTime: endTime,
+    wpm: Math.round(correct / 5 / ((endTime - startTimeRef.value) / 1000 / 60)), // Use startTimeRef here
+    accuracy: Math.round((correct / total) * 100),
+  }
+  emit('update:result', newResult)
+}
+
+function updateStats() {
+  let correct = 0
+  let incorrect = 0
+  for (let i = 0; i < input.value.length; i++) {
+    if (input.value[i] === typingText.value[i]) correct++
+    else incorrect++
+  }
+  const newResult = {
+    ...props.result,
+    startTime: startTimeRef.value,
+    correctChars: correct,
+    incorrectChars: incorrect,
+    totalChars: input.value.length,
+  }
+
+  emit('update:result', newResult)
+}
 
 async function fetchWords() {
   loading.value = true
   typingText.value = ''
   input.value = ''
+
+  // TODO: Fetch words from our API based on props.numberOfWords
   const response = await fetch(
-    'https://random-word-api.herokuapp.com/word?number=' + numberOfWords.value,
+    'https://random-word-api.herokuapp.com/word?number=' + props.numberOfWords,
   )
 
   const data = await response.json()
@@ -23,16 +114,23 @@ async function fetchWords() {
 }
 
 function onInput(e) {
-  const val = e.target.value
-  // Only allow up to the length of typingText
-  if (val.length > typingText.value.length) return
-  input.value = val
-  currentIndex.value = val.length
+  input.value = e.target.value
+
+  if (input.value.length > 0 && !hasStarted.value) {
+    startTest()
+  }
+
+  if (input.value.length >= typingText.value.length) {
+    endTest()
+  } else {
+    updateStats()
+  }
 }
 
 function onKeyDown(event) {
   if (event.key === 'Tab') {
     event.preventDefault()
+    resetTest()
     fetchWords()
   }
 }
@@ -44,6 +142,7 @@ onMounted(() => {
 
 <template>
   <div class="game" @click="inputRef && inputRef.focus()">
+    <div>{{ input.length + '/' + typingText.length }}</div>
     <div v-if="loading">Loading words...</div>
     <div v-else class="word-list" tabindex="0">
       <input
