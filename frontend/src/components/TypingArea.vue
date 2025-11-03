@@ -183,7 +183,6 @@ onMounted(() => {
 .word-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
   font-size: 1.5em;
   margin-bottom: 20px;
   outline: none;
